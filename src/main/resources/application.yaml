@@ -1,0 +1,19 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: job-scheduler
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/job_scheduler
+    username: job_user
+    password: job_pass
+
+  flyway:
+    enabled: true
+
+logging:
+  level:
+    root: INFO
+
