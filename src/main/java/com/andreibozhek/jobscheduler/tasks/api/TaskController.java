@@ -28,6 +28,12 @@ public class TaskController {
         return TaskResponse.from(t);
     }
 
+    @GetMapping("/{id}")
+    public TaskResponse get(@PathVariable UUID id) {
+        Task t = service.get(id).orElseThrow(()-> new TaskNotFoundException(id));
+        return TaskResponse.from(t);
+    }
+
     @GetMapping
     public List<TaskResponse> list(
             @RequestParam(required = false) TaskStatus status,
