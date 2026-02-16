@@ -6,7 +6,7 @@ spring:
     name: job-scheduler
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/job_scheduler
+    url: jdbc:postgresql://localhost:5433/job_scheduler
     username: job_user
     password: job_pass
 
