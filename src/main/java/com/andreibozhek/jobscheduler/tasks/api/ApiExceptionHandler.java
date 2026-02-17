@@ -23,4 +23,12 @@ public class ApiExceptionHandler {
         pd.setDetail(ex.getMessage());
         return pd;
     }
+
+    @ExceptionHandler(UnsupportedTaskTypeException.class)
+    public ProblemDetail badRequest(UnsupportedTaskTypeException ex) {
+        ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        pd.setTitle("Bad Request");
+        pd.setDetail(ex.getMessage());
+        return pd;
+    }
 }

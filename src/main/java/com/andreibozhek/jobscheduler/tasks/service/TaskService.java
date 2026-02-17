@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.andreibozhek.jobscheduler.tasks.api.UnsupportedTaskTypeException;
+import static  com.andreibozhek.jobscheduler.tasks.service.SupportedTaskTypes.TYPES;
+
 @Service
 public class TaskService {
     private final TaskRepository repo;
@@ -26,9 +29,15 @@ public class TaskService {
         } else {
             maxAttempts = req.maxAttempts();
         }
+
+        String normalizedType = req.type().toLowerCase();
+        if (!TYPES.contains(normalizedType)) {
+            throw new UnsupportedTaskTypeException(req.type(), TYPES);
+        }
+
         Task t = new Task(
                 UUID.randomUUID(),
-                req.type(),
+                normalizedType,
                 req.payload(),
                 TaskStatus.PENDING,
                 req.runAt(),
