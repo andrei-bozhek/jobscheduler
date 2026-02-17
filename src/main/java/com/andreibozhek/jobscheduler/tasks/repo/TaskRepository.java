@@ -4,7 +4,9 @@ import com.andreibozhek.jobscheduler.tasks.domain.Task;
 import com.andreibozhek.jobscheduler.tasks.domain.TaskStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,6 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.ArrayList;
 
 @Repository
 public class TaskRepository {
@@ -92,9 +95,9 @@ public class TaskRepository {
     private RowMapper<Task> taskRowMapper() {
         return new RowMapper<>() {
             @Override
-            public Task mapRow(ResultSet rs, int rowNum) throws SQLException {
+            public Task mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
                 return new Task(
-                        UUID.fromString(rs.getNString("id")),
+                        UUID.fromString(rs.getString("id")),
                         rs.getString("type"),
                         rs.getString("payload"),
                         TaskStatus.valueOf(rs.getString("status")),
@@ -110,4 +113,103 @@ public class TaskRepository {
             }
         };
     }
+
+    @Transactional
+    public List<Task> claimDueTasks(String workerId, int batchSize, int lockSeconds) {
+
+        List<UUID> ids = jdbc.query("""
+                SELECT id
+                FROM tasks
+                WHERE status = 'PENDING'
+                AND run_at <= now()
+                ORDER BY run_at
+                FOR UPDATE SKIP LOCKED
+                LIMIT ?
+                """,
+                (rs, rowNum) -> UUID.fromString(rs.getString("id")),
+                batchSize
+        );
+
+        if(ids.isEmpty()) {
+            return List.of();
+        }
+
+        String inSql =String.join(",", ids.stream().map(x->"?").toList());
+
+        ArrayList<Object> params = new ArrayList<>();
+        params.add(workerId);
+        params.add(lockSeconds);
+        params.addAll(ids);
+
+        String updateSql = """
+                UPDATE tasks
+                SET status = 'RUNNING',
+                    locked_by = ?,
+                    locked_until = now() + (? * interval '1 second'),
+                    attempt = attempt + 1
+                WHERE id IN (%s)
+                """.formatted(inSql);
+        jdbc.update(updateSql, params.toArray());
+
+        String selectSql = """
+                SELECT * FROM tasks
+                WHERE id IN (%s)
+                """.formatted(inSql);
+
+        return jdbc.query(selectSql, taskRowMapper(), ids.toArray());
+
+    }
+
+    public void insertAttemptStart(UUID taskId, int attempt) {
+        jdbc.update("""
+                INSERT INTO task_attempts(task_id, attempt, status)
+                VALUES (?, ?, 'STARTED')
+                """, taskId, attempt);
+    }
+
+    public void finishAttempt(UUID taskId, int attempt, String status, String error) {
+        jdbc.update("""
+            UPDATE task_attempts
+            SET finished_at = now(),
+                status = ?,
+                last_error = ?
+            WHERE task_id = ? AND attempt = ?
+            """, status, error, taskId, attempt);
+    }
+
+    public void markDone(UUID taskId) {
+        jdbc.update("""
+            UPDATE tasks
+            SET status = 'DONE',
+                locked_by = NULL,
+                locked_until = NULL,
+                last_error = NULL
+            WHERE id = ?
+            """, taskId);
+    }
+
+    public void markFailedOrRetry(UUID taskId, int attempt, int maxAttempts, String error) {
+        if (attempt < maxAttempts) {
+            int backoffSeconds = attempt * 5;
+            jdbc.update("""
+                    UPDATE tasks
+                    SET status = 'PENDING',
+                        run_at = now() + (? * interval '1 second'),
+                        locked_by = NULL,
+                        locked_until = NULL,
+                        last_error = ?
+                    WHERE id = ?
+                    """, backoffSeconds, error, taskId);
+        } else {
+            jdbc.update("""
+                    UPDATE tasks
+                    SET status = 'FAILED',
+                        locked_by = NULL,
+                        locked_until = NULL,
+                        last_error = ?
+                    WHERE id = ?
+                    """, error, taskId);
+        }
+    }
+
 }

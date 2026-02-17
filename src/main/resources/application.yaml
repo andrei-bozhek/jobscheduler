@@ -27,3 +27,5 @@ management:
       probes:
         enabled: true
 
+worker:
+  fixedDelayMs: 1000
