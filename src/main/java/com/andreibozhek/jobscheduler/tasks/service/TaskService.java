@@ -1,9 +1,12 @@
 package com.andreibozhek.jobscheduler.tasks.service;
 
 import com.andreibozhek.jobscheduler.tasks.api.CreateTaskRequest;
+import com.andreibozhek.jobscheduler.tasks.api.TaskAttemptResponse;
+import com.andreibozhek.jobscheduler.tasks.api.TaskNotFoundException;
 import com.andreibozhek.jobscheduler.tasks.domain.Task;
 import com.andreibozhek.jobscheduler.tasks.domain.TaskStatus;
 import com.andreibozhek.jobscheduler.tasks.repo.TaskRepository;
+import org.springframework.scheduling.config.TaskNamespaceHandler;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -59,6 +62,11 @@ public class TaskService {
 
     public List<Task> list(TaskStatus status, int limit, int offset) {
         return repo.list(status, limit, offset);
+    }
+
+    public List<TaskAttemptResponse> listRuns(UUID taskId) {
+        repo.findByID(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
+        return repo.listAttempts(taskId);
     }
 
     public boolean cancel(UUID id) {

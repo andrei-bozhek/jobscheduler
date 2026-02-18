@@ -43,6 +43,11 @@ public class TaskController {
         return service.list(status, limit, offset).stream().map(TaskResponse::from).toList();
     }
 
+    @GetMapping("/{id}/runs")
+    public List<TaskAttemptResponse> runs(@PathVariable UUID id) {
+        return service.listRuns(id);
+    }
+
     @PostMapping("/{id}/cancel")
     public void cancel(@PathVariable UUID id) {
         boolean ok = service.cancel(id);

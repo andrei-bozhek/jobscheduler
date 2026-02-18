@@ -1,5 +1,6 @@
 package com.andreibozhek.jobscheduler.tasks.repo;
 
+import com.andreibozhek.jobscheduler.tasks.api.TaskAttemptResponse;
 import com.andreibozhek.jobscheduler.tasks.domain.Task;
 import com.andreibozhek.jobscheduler.tasks.domain.TaskStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -210,6 +211,25 @@ public class TaskRepository {
                     WHERE id = ?
                     """, error, taskId);
         }
+    }
+
+    public List<TaskAttemptResponse> listAttempts(UUID taskId) {
+        return jdbc.query("""
+                SELECT id, attempt, status, started_at, finished_at, last_error
+                FROM task_attempts
+                WHERE task_id = ?
+                ORDER BY attempt ASC, id ASC
+                """,
+                (rs, rowNum) -> new TaskAttemptResponse(
+                        rs.getLong("id"),
+                        rs.getInt("attempt"),
+                        rs.getString("status"),
+                        rs.getObject("started_at", OffsetDateTime.class),
+                        rs.getObject("finished_at", OffsetDateTime.class),
+                        rs.getString("last_error")
+                ),
+                taskId
+        );
     }
 
 }
