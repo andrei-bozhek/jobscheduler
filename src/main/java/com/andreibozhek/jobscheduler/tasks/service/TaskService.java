@@ -6,6 +6,7 @@ import com.andreibozhek.jobscheduler.tasks.api.TaskNotFoundException;
 import com.andreibozhek.jobscheduler.tasks.domain.Task;
 import com.andreibozhek.jobscheduler.tasks.domain.TaskStatus;
 import com.andreibozhek.jobscheduler.tasks.repo.TaskRepository;
+import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -28,10 +29,10 @@ public class TaskService {
         this.objectMapper = objectMapper;
     }
 
-    public Task create(CreateTaskRequest req) {
+    public Task create(CreateTaskRequest req) throws BadRequestException {
         int maxAttempts;
         if (req.maxAttempts() == null) {
-            maxAttempts = 3;
+            maxAttempts = 5;
         } else {
             maxAttempts = req.maxAttempts();
         }
@@ -46,6 +47,14 @@ public class TaskService {
             payloadJson = objectMapper.writeValueAsString(req.payload());
         } catch (Exception ex) {
             throw new IllegalArgumentException("Invalid payload JSON");
+        }
+        if (payloadJson.length() > 5000) {
+            throw new BadRequestException("payload too long");
+        }
+
+        OffsetDateTime now = OffsetDateTime.now();
+        if (req.runAt().isBefore(now.minusSeconds(10))) {
+            throw new BadRequestException("runAt must be in future");
         }
 
         Task t = new Task(

@@ -5,6 +5,7 @@ import com.andreibozhek.jobscheduler.tasks.domain.TaskStatus;
 import com.andreibozhek.jobscheduler.tasks.service.TaskService;
 
 import jakarta.validation.Valid;
+import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public class TaskController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public TaskResponse create(@Valid @RequestBody CreateTaskRequest req) {
+    public TaskResponse create(@Valid @RequestBody CreateTaskRequest req) throws BadRequestException {
         Task t = service.create(req);
         return TaskResponse.from(t);
     }
@@ -40,6 +41,13 @@ public class TaskController {
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(defaultValue = "0") int offset
     ) {
+        if (limit < 1 || limit > 100) {
+            throw new TaskConflictException("limit must be in range 1..100");
+        }
+        if (offset < 0) {
+            throw new TaskConflictException("offset must be >=0");
+        }
+
         return service.list(status, limit, offset).stream().map(TaskResponse::from).toList();
     }
 
