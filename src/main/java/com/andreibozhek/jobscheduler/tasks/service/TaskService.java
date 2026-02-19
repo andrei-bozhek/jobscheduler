@@ -6,7 +6,6 @@ import com.andreibozhek.jobscheduler.tasks.api.TaskNotFoundException;
 import com.andreibozhek.jobscheduler.tasks.domain.Task;
 import com.andreibozhek.jobscheduler.tasks.domain.TaskStatus;
 import com.andreibozhek.jobscheduler.tasks.repo.TaskRepository;
-import org.springframework.scheduling.config.TaskNamespaceHandler;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -17,12 +16,16 @@ import java.util.UUID;
 import com.andreibozhek.jobscheduler.tasks.api.UnsupportedTaskTypeException;
 import static  com.andreibozhek.jobscheduler.tasks.service.SupportedTaskTypes.TYPES;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Service
 public class TaskService {
     private final TaskRepository repo;
+    private final ObjectMapper objectMapper;
 
-    public TaskService(TaskRepository repo) {
+    public TaskService(TaskRepository repo, ObjectMapper objectMapper) {
         this.repo = repo;
+        this.objectMapper = objectMapper;
     }
 
     public Task create(CreateTaskRequest req) {
@@ -38,10 +41,17 @@ public class TaskService {
             throw new UnsupportedTaskTypeException(req.type(), TYPES);
         }
 
+        String payloadJson;
+        try {
+            payloadJson = objectMapper.writeValueAsString(req.payload());
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Invalid payload JSON");
+        }
+
         Task t = new Task(
                 UUID.randomUUID(),
                 normalizedType,
-                req.payload(),
+                payloadJson,
                 TaskStatus.PENDING,
                 req.runAt(),
                 0,
