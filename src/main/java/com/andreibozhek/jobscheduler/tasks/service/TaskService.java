@@ -1,8 +1,6 @@
 package com.andreibozhek.jobscheduler.tasks.service;
 
-import com.andreibozhek.jobscheduler.tasks.api.CreateTaskRequest;
-import com.andreibozhek.jobscheduler.tasks.api.TaskAttemptResponse;
-import com.andreibozhek.jobscheduler.tasks.api.TaskNotFoundException;
+import com.andreibozhek.jobscheduler.tasks.api.*;
 import com.andreibozhek.jobscheduler.tasks.domain.Task;
 import com.andreibozhek.jobscheduler.tasks.domain.TaskStatus;
 import com.andreibozhek.jobscheduler.tasks.repo.TaskRepository;
@@ -14,7 +12,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.andreibozhek.jobscheduler.tasks.api.UnsupportedTaskTypeException;
 import static  com.andreibozhek.jobscheduler.tasks.service.SupportedTaskTypes.TYPES;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -89,6 +86,17 @@ public class TaskService {
     }
 
     public boolean cancel(UUID id) {
+        Task t = repo.findByID(id).orElseThrow(() -> new TaskNotFoundException(id));
+
+        if (t.status() != TaskStatus.PENDING) {
+            throw new TaskConflictException("Task is not cancelable in status: "+ t.status());
+        }
+
+        boolean ok = repo.cancelIfPending(id);
+        if (!ok) {
+            throw new TaskConflictException("Task status changed, cancel failed: " + id);
+        }
+
         return repo.cancelIfPending(id);
     }
 }
