@@ -57,11 +57,9 @@ public class TaskController {
     }
 
     @PostMapping("/{id}/cancel")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancel(@PathVariable UUID id) {
-        boolean ok = service.cancel(id);
-        if (!ok) {
-            throw new TaskConflictException("Task is not in PENDING state or not found: "+ id);
-        }
+        service.cancel(id);
     }
 
 }
