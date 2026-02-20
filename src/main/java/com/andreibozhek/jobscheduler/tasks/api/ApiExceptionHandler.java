@@ -31,22 +31,22 @@ public class ApiExceptionHandler {
         return pd;
     }
 
-//    @ExceptionHandler(UnsupportedTaskTypeException.class)
-//    public ProblemDetail badRequest(UnsupportedTaskTypeException ex) {
-//        ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-//        pd.setTitle("Bad Request");
-//        pd.setDetail(ex.getMessage());
-//        return pd;
-//    }
+    @ExceptionHandler(UnsupportedTaskTypeException.class)
+    public ProblemDetail unsupportedType(UnsupportedTaskTypeException ex) {
+        ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        pd.setTitle("Bad Request");
+        pd.setDetail(ex.getMessage());
+        return pd;
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ProblemDetail badRequest(MethodArgumentNotValidException ex) {
+    public ProblemDetail validationError(MethodArgumentNotValidException ex) {
         ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
         pd.setTitle("Validation failed");
         pd.setDetail("Request has invalid fields");
 
         List<Map<String, String>> errors = new ArrayList<>();
-        for (FieldError fe : ex.getFieldErrors()) {
+        for (FieldError fe : ex.getBindingResult().getFieldErrors()) {
             Map<String, String> item = new HashMap<>();
             item.put("field", fe.getField());
             item.put("message", fe.getDefaultMessage());
