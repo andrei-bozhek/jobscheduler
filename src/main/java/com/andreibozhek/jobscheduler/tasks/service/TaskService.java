@@ -85,7 +85,7 @@ public class TaskService {
         return repo.listAttempts(taskId);
     }
 
-    public boolean cancel(UUID id) {
+    public void cancel(UUID id) {
         Task t = repo.findByID(id).orElseThrow(() -> new TaskNotFoundException(id));
 
         if (t.status() != TaskStatus.PENDING) {
@@ -96,7 +96,5 @@ public class TaskService {
         if (!ok) {
             throw new TaskConflictException("Task status changed, cancel failed: " + id);
         }
-
-        return repo.cancelIfPending(id);
     }
 }
