@@ -14,7 +14,7 @@ public record TaskResponse(
         OffsetDateTime  runAt,
         int             attempt,
         int             maxAttempts,
-        String          lastError
+        String          error
 ) {
     public static TaskResponse from(Task t) {
         return new TaskResponse(
@@ -25,7 +25,7 @@ public record TaskResponse(
                 t.runAt(),
                 t.attempt(),
                 t.maxAttempts(),
-                t.lastError()
+                t.error()
         );
     }
 }

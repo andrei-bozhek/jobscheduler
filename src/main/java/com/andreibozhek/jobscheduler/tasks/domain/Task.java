@@ -11,7 +11,7 @@ public record Task(
   OffsetDateTime    runAt,
   int               attempt,
   int               maxAttempts,
-  String            lastError,
+  String            error,
   String            lockedBy,
   OffsetDateTime    lockedUntil,
   OffsetDateTime    createdAt,

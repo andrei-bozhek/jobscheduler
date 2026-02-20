@@ -8,7 +8,7 @@ CREATE TABLE tasks (
 
     attempt             INT NOT NULL DEFAULT 0,
     max_attempts        INT NOT NULL DEFAULT 3,
-    last_error          TEXT,
+    error               TEXT,
 
     locked_by           TEXT,
     locked_until        TIMESTAMPTZ,
@@ -28,7 +28,7 @@ CREATE TABLE task_attempts (
     started_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     finished_at         TIMESTAMPTZ,
     status              TEXT NOT NULL,
-    last_error          TEXT
+    error               TEXT
 );
 
 CREATE INDEX idx_task_attempts_task_id_attempt ON task_attempts(task_id, attempt);

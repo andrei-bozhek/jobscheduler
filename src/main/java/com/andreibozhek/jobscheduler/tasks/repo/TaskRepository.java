@@ -29,7 +29,7 @@ public class TaskRepository {
         jdbc.update("""
                 INSERT INTO tasks(
                     id, type, payload, status, run_at,
-                    attempt, max_attempts, last_error,
+                    attempt, max_attempts, error,
                     locked_by, locked_until
                 ) VALUES (
                     ?, ?, ?::jsonb, ?, ?,
@@ -44,7 +44,7 @@ public class TaskRepository {
                 t.runAt(),
                 t.attempt(),
                 t.maxAttempts(),
-                t.lastError(),
+                t.error(),
                 t.lockedBy(),
                 t.lockedUntil()
         );
@@ -105,7 +105,7 @@ public class TaskRepository {
                         rs.getObject("run_at", OffsetDateTime.class),
                         rs.getInt("attempt"),
                         rs.getInt("max_attempts"),
-                        rs.getString("last_error"),
+                        rs.getString("error"),
                         rs.getString("locked_by"),
                         rs.getObject("locked_until", OffsetDateTime.class),
                         rs.getObject("created_at", OffsetDateTime.class),
@@ -173,7 +173,7 @@ public class TaskRepository {
             UPDATE task_attempts
             SET finished_at = now(),
                 status = ?,
-                last_error = ?
+                error = ?
             WHERE task_id = ? AND attempt = ?
             """, status, error, taskId, attempt);
     }
@@ -184,7 +184,7 @@ public class TaskRepository {
             SET status = 'DONE',
                 locked_by = NULL,
                 locked_until = NULL,
-                last_error = NULL
+                error = NULL
             WHERE id = ?
             """, taskId);
     }
@@ -198,7 +198,7 @@ public class TaskRepository {
                         run_at = now() + (? * interval '1 second'),
                         locked_by = NULL,
                         locked_until = NULL,
-                        last_error = ?
+                        error = ?
                     WHERE id = ?
                     """, backoffSeconds, error, taskId);
         } else {
@@ -207,7 +207,7 @@ public class TaskRepository {
                     SET status = 'FAILED',
                         locked_by = NULL,
                         locked_until = NULL,
-                        last_error = ?
+                        error = ?
                     WHERE id = ?
                     """, error, taskId);
         }
@@ -215,7 +215,7 @@ public class TaskRepository {
 
     public List<TaskAttemptResponse> listAttempts(UUID taskId) {
         return jdbc.query("""
-                SELECT id, attempt, status, started_at, finished_at, last_error
+                SELECT id, attempt, status, started_at, finished_at, error
                 FROM task_attempts
                 WHERE task_id = ?
                 ORDER BY attempt ASC, id ASC
@@ -226,7 +226,7 @@ public class TaskRepository {
                         rs.getString("status"),
                         rs.getObject("started_at", OffsetDateTime.class),
                         rs.getObject("finished_at", OffsetDateTime.class),
-                        rs.getString("last_error")
+                        rs.getString("error")
                 ),
                 taskId
         );
