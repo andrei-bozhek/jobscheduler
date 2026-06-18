@@ -1,4 +1,7 @@
 # Job Scheduler
+**Languages:** English | [日本語](README.ja.md)
+
+# Job Scheduler
 
 A small task scheduling service built with Spring Boot and PostgreSQL.
 

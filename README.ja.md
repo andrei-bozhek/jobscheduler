@@ -1,4 +1,7 @@
 # Job Scheduler
+**言語:** 日本語 | [English](README.md)
+
+# Job Scheduler
 
 Spring Boot + PostgreSQL で作った *小さなタスクスケジューラ*です。  
 ポートフォリオとして、以下を意識して実装しました：

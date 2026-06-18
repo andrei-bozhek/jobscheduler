@@ -1,13 +1,10 @@
 package com.andreibozhek.jobscheduler;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class JobschedulerApplicationTests {
+class JobschedulerApplicationTests extends IntegrationTestBase {
 
 	@Test
 	void contextLoads() {
 	}
-
 }
