@@ -3,15 +3,16 @@ package com.andreibozhek.jobscheduler.tasks.service;
 import com.andreibozhek.jobscheduler.tasks.api.*;
 import com.andreibozhek.jobscheduler.tasks.domain.Task;
 import com.andreibozhek.jobscheduler.tasks.domain.TaskStatus;
+import com.andreibozhek.jobscheduler.tasks.handler.TaskHandler;
 import com.andreibozhek.jobscheduler.tasks.repo.TaskRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
-
-import static  com.andreibozhek.jobscheduler.tasks.service.SupportedTaskTypes.TYPES;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -19,10 +20,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class TaskService {
     private final TaskRepository repo;
     private final ObjectMapper objectMapper;
+    private final Set<String> supportedTypes;
 
-    public TaskService(TaskRepository repo, ObjectMapper objectMapper) {
+    public TaskService(
+            TaskRepository repo,
+            ObjectMapper objectMapper,
+            List<TaskHandler> handlers) {
         this.repo = repo;
         this.objectMapper = objectMapper;
+        this.supportedTypes = handlers.stream()
+                .map(TaskHandler::type)
+                .collect(Collectors.toSet());
     }
 
     public Task create(CreateTaskRequest req) {
@@ -34,8 +42,8 @@ public class TaskService {
         }
 
         String normalizedType = req.type().toLowerCase();
-        if (!TYPES.contains(normalizedType)) {
-            throw new UnsupportedTaskTypeException(req.type(), TYPES);
+        if (!supportedTypes.contains(normalizedType)) {
+            throw new UnsupportedTaskTypeException(req.type(), supportedTypes);
         }
 
         String payloadJson;

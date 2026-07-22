@@ -31,7 +31,7 @@ public class TaskWorker {
         this.repo = repo;
         this.handlers = handlers.stream()
                 .collect(Collectors.toMap(
-                        handler -> handler.type(),
+                        TaskHandler::type,
                         handler -> handler
                 ));
     }
