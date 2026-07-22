@@ -213,6 +213,18 @@ public class TaskRepository {
         }
     }
 
+    public int requeueExpiredRunningTasks() {
+        return jdbc.update("""
+                UPDATE tasks
+                SET status = 'PENDING',
+                    locked_by = NULL,
+                    locked_until = NULL,
+                    error = 'Task lease expired'
+                WHERE status = 'RUNNING'
+                AND locked_until < now()
+                """);
+    }
+
     public List<TaskAttemptResponse> listAttempts(UUID taskId) {
         return jdbc.query("""
                 SELECT id, attempt, status, started_at, finished_at, error

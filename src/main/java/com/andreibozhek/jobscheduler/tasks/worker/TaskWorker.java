@@ -38,6 +38,12 @@ public class TaskWorker {
 
     @Scheduled(fixedDelayString = "${worker.fixedDelayMs:1000}")
     public void tick() {
+        int requeued = repo.requeueExpiredRunningTasks();
+
+        if (requeued > 0) {
+            log.warn("[{}] Requeued {} expired running tasks", workerId, requeued);
+        }
+
         List<Task> claimed = repo.claimDueTasks(workerId, 10, 30);
         for (Task t : claimed) {
             executeOne(t);
