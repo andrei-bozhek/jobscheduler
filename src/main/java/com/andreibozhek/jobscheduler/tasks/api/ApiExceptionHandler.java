@@ -55,4 +55,12 @@ public class ApiExceptionHandler {
         pd.setProperty("errors", errors);
         return pd;
     }
+
+    @ExceptionHandler(BadRequestApiException.class)
+    public ProblemDetail badRequest(BadRequestApiException ex) {
+        ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        pd.setTitle("Bad Request");
+        pd.setDetail(ex.getMessage());
+        return pd;
+    }
 }
