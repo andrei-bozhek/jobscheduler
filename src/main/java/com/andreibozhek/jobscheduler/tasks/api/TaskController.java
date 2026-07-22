@@ -5,7 +5,6 @@ import com.andreibozhek.jobscheduler.tasks.domain.TaskStatus;
 import com.andreibozhek.jobscheduler.tasks.service.TaskService;
 
 import jakarta.validation.Valid;
-import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +23,7 @@ public class TaskController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public TaskResponse create(@Valid @RequestBody CreateTaskRequest req) throws BadRequestException {
+    public TaskResponse create(@Valid @RequestBody CreateTaskRequest req) {
         Task t = service.create(req);
         return TaskResponse.from(t);
     }
