@@ -29,7 +29,7 @@ public class TaskService {
     public Task create(CreateTaskRequest req) throws BadRequestException {
         int maxAttempts;
         if (req.maxAttempts() == null) {
-            maxAttempts = 5;
+            maxAttempts = 3;
         } else {
             maxAttempts = req.maxAttempts();
         }
