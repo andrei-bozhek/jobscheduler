@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Scheduler</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<main class="page">
+    <section class="toolbar">
+        <div>
+            <h1>Job Scheduler</h1>
+        </div>
+
+        <button id="refreshButton" type="button">Refresh</button>
+    </section>
+
+    <section class="panel">
+        <h2>Create Task</h2>
+
+        <form id="createTaskForm" class="form">
+            <label>
+                Type
+                <input name="type" value="echo" required>
+            </label>
+
+            <label>
+                Message
+                <input name="message" value="hello" required>
+            </label>
+
+            <label>
+                Run At
+                <input name="runAt" type="datetime-local" required>
+            </label>
+
+            <label>
+                Max Attempts
+                <input name="maxAttempts" type="number" min="1" max="5" value="3">
+            </label>
+
+            <button type="submit">Create</button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <div class="sectionHeader">
+            <h2>Tasks</h2>
+
+            <select id="statusFilter">
+                <option value="">All</option>
+                <option value="PENDING">Pending</option>
+                <option value="RUNNING">Running</option>
+                <option value="DONE">Done</option>
+                <option value="FAILED">Failed</option>
+                <option value="CANCELED">Canceled</option>
+            </select>
+        </div>
+
+        <div id="taskList" class="taskList">
+            <p class="muted">No tasks loaded yet.</p>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Task Details</h2>
+        <div id="taskDetails">
+            <p class="muted">Select a task to view details.</p>
+        </div>
+    </section>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>
