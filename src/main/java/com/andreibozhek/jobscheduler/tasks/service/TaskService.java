@@ -33,9 +33,9 @@ public class TaskService {
                 .collect(Collectors.toSet());
     }
 
-    /*
+    /**
      * Creates a new task and stores it as PENDING.
-     *
+     * <p>
      * The method normalizes the task type, validates that the type is supported,
      * serializes the payload to JSON, and applies the default maxAttempts value
      * when the client does not provide it.
@@ -87,9 +87,9 @@ public class TaskService {
         return t;
     }
 
-    /*
+    /**
      * Finds a task by id.
-     *
+     * <p>
      * The method returns Optional.empty() when the task does not exist.
      * The controller decides how to convert that case into an HTTP 404 response.
      */
@@ -97,9 +97,9 @@ public class TaskService {
         return repo.findByID(id);
     }
 
-    /*
+    /**
      * Lists tasks with optional status filtering.
-     *
+     * <p>
      * When status is null, the repository returns tasks from all statuses.
      * Pagination is controlled by limit and offset.
      */
@@ -107,9 +107,9 @@ public class TaskService {
         return repo.list(status, limit, offset);
     }
 
-    /*
+    /**
      * Returns execution attempts for a task.
-     *
+     * <p>
      * The task must exist. If the task id is unknown, the method throws
      * TaskNotFoundException so the API can return a 404 response.
      */
@@ -118,9 +118,9 @@ public class TaskService {
         return repo.listAttempts(taskId);
     }
 
-    /*
+    /**
      * Cancels a task when it is still waiting for execution.
-     *
+     * <p>
      * Only PENDING tasks can be canceled. If the task is already RUNNING,
      * DONE, FAILED, or CANCELED, the method throws TaskConflictException.
      */

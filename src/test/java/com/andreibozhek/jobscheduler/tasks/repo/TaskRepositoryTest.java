@@ -19,7 +19,7 @@ class TaskRepositoryTest extends IntegrationTestBase {
 
     /**
      * Verifies that an expired RUNNING task is returned to the queue.
-     *
+     * <p>
      * This test checks:
      * - the task starts as RUNNING;
      * - locked_until is in the past, so the lease has expired;
@@ -66,7 +66,7 @@ class TaskRepositoryTest extends IntegrationTestBase {
 
     /**
      * Verifies that an active RUNNING task is not requeued.
-     *
+     * <p>
      * This test checks:
      * - the task starts as RUNNING;
      * - locked_until is in the future, so the lease is still active;
@@ -111,7 +111,7 @@ class TaskRepositoryTest extends IntegrationTestBase {
 
     /**
      * Verifies that a worker can claim a task that is ready to run.
-     *
+     * <p>
      * This test checks:
      * - the task starts as PENDING;
      * - runAt is in the past, so the task is due;
@@ -157,7 +157,7 @@ class TaskRepositoryTest extends IntegrationTestBase {
 
     /**
      * Verifies that future tasks are not claimed too early.
-     *
+     * <p>
      * This test checks:
      * - the task starts as PENDING;
      * - runAt is in the future, so the task is not due yet;
@@ -201,7 +201,7 @@ class TaskRepositoryTest extends IntegrationTestBase {
 
     /**
      * Verifies that claiming respects the requested batch size.
-     *
+     * <p>
      * This test checks:
      * - two tasks are PENDING and already due;
      * - the worker asks to claim only one task;

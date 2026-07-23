@@ -19,7 +19,7 @@ class TaskControllerTest extends IntegrationTestBase {
 
     /**
      * Verifies the HTTP response shape for task creation.
-     *
+     * <p>
      * What this test checks:
      * - the client sends payload as a JSON object;
      * - POST /tasks creates the task and returns HTTP 201;

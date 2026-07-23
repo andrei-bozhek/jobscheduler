@@ -31,7 +31,7 @@ class TaskServiceTest extends IntegrationTestBase {
 
     /**
      * Verifies that maxAttempts gets a default value when the client omits it.
-     *
+     * <p>
      * What this test checks:
      * - the request has maxAttempts set to null;
      * - service.create(...) still creates the task;
@@ -53,7 +53,7 @@ class TaskServiceTest extends IntegrationTestBase {
 
     /**
      * Verifies that task type is normalized before saving.
-     *
+     * <p>
      * What this test checks:
      * - the request uses uppercase ECHO;
      * - service.create(...) accepts it;
@@ -75,7 +75,7 @@ class TaskServiceTest extends IntegrationTestBase {
 
     /**
      * Verifies that unknown task types are rejected.
-     *
+     * <p>
      * What this test checks:
      * - the request uses a task type that has no handler;
      * - service.create(...) does not create the task;
@@ -96,7 +96,7 @@ class TaskServiceTest extends IntegrationTestBase {
 
     /**
      * Verifies that tasks cannot be scheduled too far in the past.
-     *
+     * <p>
      * What this test checks:
      * - the request uses runAt in the past;
      * - service.create(...) rejects the request;
@@ -117,7 +117,7 @@ class TaskServiceTest extends IntegrationTestBase {
 
     /**
      * Verifies that a pending task can be canceled.
-     *
+     * <p>
      * What this test checks:
      * - service.create(...) creates a PENDING task;
      * - service.cancel(...) is called for that task;
@@ -143,7 +143,7 @@ class TaskServiceTest extends IntegrationTestBase {
 
     /**
      * Verifies that a running task cannot be canceled.
-     *
+     * <p>
      * What this test checks:
      * - the database contains a RUNNING task;
      * - service.cancel(...) is called for that task;
@@ -176,7 +176,7 @@ class TaskServiceTest extends IntegrationTestBase {
 
     /**
      * Verifies that very large payloads are rejected.
-     *
+     * <p>
      * What this test checks:
      * - the payload contains a long message;
      * - after JSON serialization, the payload is larger than the allowed limit;
