@@ -2,6 +2,7 @@ package com.andreibozhek.jobscheduler.tasks.service;
 
 import com.andreibozhek.jobscheduler.IntegrationTestBase;
 import com.andreibozhek.jobscheduler.tasks.api.CreateTaskRequest;
+import com.andreibozhek.jobscheduler.tasks.api.UnsupportedTaskTypeException;
 import com.andreibozhek.jobscheduler.tasks.domain.Task;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class TaskServiceTest extends IntegrationTestBase {
 
@@ -46,4 +48,18 @@ class TaskServiceTest extends IntegrationTestBase {
 
         assertThat(task.type()).isEqualTo("echo");
     }
+
+    @Test
+    void createTaskRejectsUnsupportedTaskType() {
+        CreateTaskRequest request = new CreateTaskRequest(
+                "unknown",
+                objectMapper.createObjectNode().put("message", "hello"),
+                OffsetDateTime.now().plusMinutes(1),
+                3
+        );
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(UnsupportedTaskTypeException.class);
+    }
+
 }
