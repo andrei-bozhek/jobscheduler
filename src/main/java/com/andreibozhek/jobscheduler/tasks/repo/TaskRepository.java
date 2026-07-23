@@ -25,6 +25,13 @@ public class TaskRepository {
         this.jdbc = jdbc;
     }
 
+    /*
+     * Stores a new task in the database.
+     *
+     * The task is usually created with status PENDING.
+     * The payload is stored as PostgreSQL JSONB,
+     * so the method casts the JSON string with ::jsonb.
+     */
     public void insert(Task t) {
         jdbc.update("""
                 INSERT INTO tasks(
@@ -50,6 +57,12 @@ public class TaskRepository {
         );
     }
 
+    /*
+     * Finds one task by its id.
+     *
+     * The method returns Optional.empty() when no row exists for the given id.
+     * This lets the service or controller decide how to handle a missing task.
+     */
     public Optional<Task> findByID(UUID id) {
         List<Task> rows = jdbc.query(
                 "SELECT * FROM tasks WHERE id = ?",
@@ -59,6 +72,12 @@ public class TaskRepository {
         return rows.stream().findFirst();
     }
 
+    /*
+     * Lists tasks with optional status filtering.
+     *
+     * When status is null, tasks from all statuses are returned. Results are
+     * ordered by creation time, newest first, and limited by limit and offset.
+     */
     public List<Task> list(TaskStatus status, int limit, int offset) {
         if (status == null) {
             return jdbc.query("""
@@ -84,6 +103,14 @@ public class TaskRepository {
         );
     }
 
+    /*
+     * Cancels a task only if it is still pending.
+     *
+     * The status check is part of the SQL update.
+     * This protects the method from race conditions
+     * where another worker may change the task status at the same time.
+     * The method returns true only when exactly one row was updated.
+     */
     public boolean cancelIfPending(UUID id) {
         int updated = jdbc.update("""
                 UPDATE tasks
@@ -93,6 +120,12 @@ public class TaskRepository {
         return updated == 1;
     }
 
+    /*
+     * Creates a RowMapper that converts a database row into a Task record.
+     *
+     * Keeping the mapping in one method makes all task queries use the same
+     * conversion logic for timestamps, UUID values, status values, and lock fields.
+     */
     private RowMapper<Task> taskRowMapper() {
         return new RowMapper<>() {
             @Override
@@ -115,6 +148,17 @@ public class TaskRepository {
         };
     }
 
+    /*
+     * Claims due pending tasks for one worker.
+     *
+     * A task is due when its status is PENDING and run_at is not in the future.
+     * The SELECT query uses FOR UPDATE SKIP LOCKED so multiple workers can claim
+     * tasks at the same time without taking the same row.
+     *
+     * Claimed tasks are moved to RUNNING, assigned to the worker id, given a lease
+     * time, and their attempt counter is increased. The method returns the updated
+     * task rows so the worker can execute them.
+     */
     @Transactional
     public List<Task> claimDueTasks(String workerId, int batchSize, int lockSeconds) {
 
@@ -161,6 +205,12 @@ public class TaskRepository {
 
     }
 
+    /*
+     * Records the start of one execution attempt.
+     *
+     * The attempt number is passed from the task row after claiming. This makes
+     * task_attempts show which task attempt was started by the worker.
+     */
     public void insertAttemptStart(UUID taskId, int attempt) {
         jdbc.update("""
                 INSERT INTO task_attempts(task_id, attempt, status)
@@ -168,6 +218,12 @@ public class TaskRepository {
                 """, taskId, attempt);
     }
 
+    /*
+     * Marks one execution attempt as finished.
+     *
+     * The status is usually SUCCESS or FAILED. When the attempt failed, error keeps
+     * a short message that can be returned by the run history API.
+     */
     public void finishAttempt(UUID taskId, int attempt, String status, String error) {
         jdbc.update("""
             UPDATE task_attempts
@@ -178,6 +234,12 @@ public class TaskRepository {
             """, status, error, taskId, attempt);
     }
 
+    /*
+     * Marks a task as completed successfully.
+     *
+     * The task leaves RUNNING state, its lock fields are cleared,
+     * and the last error is removed because the final result is successful.
+     */
     public void markDone(UUID taskId) {
         jdbc.update("""
             UPDATE tasks
@@ -189,6 +251,13 @@ public class TaskRepository {
             """, taskId);
     }
 
+    /*
+     * Handles a failed task execution.
+     *
+     * When attempts remain, the task is moved back to PENDING and scheduled again
+     * with a small linear backoff. When no attempts remain, the task is marked as
+     * FAILED. In both cases the lock fields are cleared.
+     */
     public void markFailedOrRetry(UUID taskId, int attempt, int maxAttempts, String error) {
         if (attempt < maxAttempts) {
             int backoffSeconds = attempt * 5;
@@ -213,6 +282,13 @@ public class TaskRepository {
         }
     }
 
+    /*
+     * Returns expired running tasks back to the pending queue.
+     *
+     * This handles the case where a worker claimed a task but stopped before
+     * finishing it. Only RUNNING tasks with an expired locked_until value are
+     * requeued. The method returns the number of rows that were updated.
+     */
     public int requeueExpiredRunningTasks() {
         return jdbc.update("""
                 UPDATE tasks
@@ -225,6 +301,13 @@ public class TaskRepository {
                 """);
     }
 
+    /*
+     * Lists all execution attempts for one task.
+     *
+     * Attempts are ordered by attempt number and then by id.
+     * This gives a stable history for the API even
+     * if more than one row has the same attempt number.
+     */
     public List<TaskAttemptResponse> listAttempts(UUID taskId) {
         return jdbc.query("""
                 SELECT id, attempt, status, started_at, finished_at, error
