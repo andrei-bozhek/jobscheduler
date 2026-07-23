@@ -118,4 +118,37 @@ class TaskRepositoryTest extends IntegrationTestBase {
         assertThat(updated.lockedUntil()).isNotNull();
         assertThat(updated.attempt()).isEqualTo(1);
     }
+
+    @Test
+    void claimDueTasksSkipsFutureTask() {
+        UUID taskId = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now();
+
+        Task task = new Task(
+                taskId,
+                "echo",
+                "{\"message\":\"hello\"}",
+                TaskStatus.PENDING,
+                now.plusMinutes(10),
+                0,
+                3,
+                null,
+                null,
+                null,
+                now,
+                now
+        );
+
+        repo.insert(task);
+
+        List<Task> claimed = repo.claimDueTasks("worker-test", 10, 30);
+
+        Task updated = repo.findByID(taskId).orElseThrow();
+
+        assertThat(claimed).isEmpty();
+        assertThat(updated.status()).isEqualTo(TaskStatus.PENDING);
+        assertThat(updated.lockedBy()).isNull();
+        assertThat(updated.lockedUntil()).isNull();
+        assertThat(updated.attempt()).isZero();
+    }
 }
