@@ -50,4 +50,37 @@ class TaskRepositoryTest extends IntegrationTestBase {
         assertThat(updated.attempt()).isEqualTo(1);
 
     }
+
+    @Test
+    void requeueExpiredRunningTasksKeepsActiveRunningTaskLocked() {
+        UUID taskId = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now();
+
+        Task task = new Task(
+                taskId,
+                "echo",
+                "{\"message\":\"hello\"}",
+                TaskStatus.RUNNING,
+                now.minusMinutes(5),
+                1,
+                3,
+                null,
+                "worker-active",
+                now.plusMinutes(1),
+                now,
+                now
+        );
+
+        repo.insert(task);
+
+        int requeued = repo.requeueExpiredRunningTasks();
+
+        Task updated = repo.findByID(taskId).orElseThrow();
+
+        assertThat(requeued).isZero();
+        assertThat(updated.status()).isEqualTo(TaskStatus.RUNNING);
+        assertThat(updated.lockedBy()).isEqualTo("worker-active");
+        assertThat(updated.lockedUntil()).isNotNull();
+        assertThat(updated.attempt()).isEqualTo(1);
+    }
 }
