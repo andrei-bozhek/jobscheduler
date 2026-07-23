@@ -14,6 +14,16 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/*
+ * Background worker that executes scheduled tasks.
+ *
+ * The worker wakes up on a fixed delay, returns expired RUNNING tasks back to
+ * the queue, claims due PENDING tasks, and executes each claimed task through
+ * a matching TaskHandler.
+ *
+ * The worker is disabled in integration tests with worker.enabled=false so
+ * tests can control task state directly.
+ */
 @Component
 @ConditionalOnProperty(
         name = "worker.enabled",
@@ -27,6 +37,12 @@ public class TaskWorker {
     private final String workerId = "worker-" + UUID.randomUUID();
     private final Map<String, TaskHandler> handlers;
 
+    /*
+     * Builds the worker and creates a lookup map from task type to handler.
+     *
+     * Spring injects all TaskHandler beans. The map lets the worker find the right
+     * handler for each task type without hard-coded if statements.
+     */
     public TaskWorker(TaskRepository repo, List<TaskHandler> handlers) {
         this.repo = repo;
         this.handlers = handlers.stream()
@@ -36,6 +52,12 @@ public class TaskWorker {
                 ));
     }
 
+    /*
+     * Runs one worker cycle.
+     *
+     * First, expired RUNNING tasks are requeued. Then this worker claims a small
+     * batch of due PENDING tasks and executes them one by one.
+     */
     @Scheduled(fixedDelayString = "${worker.fixedDelayMs:1000}")
     public void tick() {
         int requeued = repo.requeueExpiredRunningTasks();
@@ -50,6 +72,14 @@ public class TaskWorker {
         }
     }
 
+    /*
+     * Executes one claimed task and records the result.
+     *
+     * The method starts an attempt record before running the handler. If the
+     * handler finishes without an exception, the attempt is marked as successful
+     * and the task becomes DONE. If the handler throws an exception, the task is
+     * either retried later or marked as FAILED.
+     */
     private void executeOne(Task t) {
         int attempt = t.attempt();
         repo.insertAttemptStart(t.id(), attempt);
