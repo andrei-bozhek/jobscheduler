@@ -1,6 +1,7 @@
 package com.andreibozhek.jobscheduler.tasks.service;
 
 import com.andreibozhek.jobscheduler.IntegrationTestBase;
+import com.andreibozhek.jobscheduler.tasks.api.BadRequestApiException;
 import com.andreibozhek.jobscheduler.tasks.api.CreateTaskRequest;
 import com.andreibozhek.jobscheduler.tasks.api.UnsupportedTaskTypeException;
 import com.andreibozhek.jobscheduler.tasks.domain.Task;
@@ -60,6 +61,19 @@ class TaskServiceTest extends IntegrationTestBase {
 
         assertThatThrownBy(() -> service.create(request))
                 .isInstanceOf(UnsupportedTaskTypeException.class);
+    }
+
+    @Test
+    void createTaskRejectsPastRunTime() {
+        CreateTaskRequest request = new CreateTaskRequest(
+                "echo",
+                objectMapper.createObjectNode().put("message", "hello"),
+                OffsetDateTime.now().minusMinutes(1),
+                3
+        );
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(BadRequestApiException.class);
     }
 
 }
