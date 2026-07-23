@@ -33,6 +33,13 @@ public class TaskService {
                 .collect(Collectors.toSet());
     }
 
+    /*
+     * Creates a new task and stores it as PENDING.
+     *
+     * The method normalizes the task type, validates that the type is supported,
+     * serializes the payload to JSON, and applies the default maxAttempts value
+     * when the client does not provide it.
+     */
     public Task create(CreateTaskRequest req) {
         int maxAttempts;
         if (req.maxAttempts() == null) {
@@ -80,19 +87,43 @@ public class TaskService {
         return t;
     }
 
+    /*
+     * Finds a task by id.
+     *
+     * The method returns Optional.empty() when the task does not exist.
+     * The controller decides how to convert that case into an HTTP 404 response.
+     */
     public Optional<Task> get (UUID id) {
         return repo.findByID(id);
     }
 
+    /*
+     * Lists tasks with optional status filtering.
+     *
+     * When status is null, the repository returns tasks from all statuses.
+     * Pagination is controlled by limit and offset.
+     */
     public List<Task> list(TaskStatus status, int limit, int offset) {
         return repo.list(status, limit, offset);
     }
 
+    /*
+     * Returns execution attempts for a task.
+     *
+     * The task must exist. If the task id is unknown, the method throws
+     * TaskNotFoundException so the API can return a 404 response.
+     */
     public List<TaskAttemptResponse> listRuns(UUID taskId) {
         repo.findByID(taskId).orElseThrow(() -> new TaskNotFoundException(taskId));
         return repo.listAttempts(taskId);
     }
 
+    /*
+     * Cancels a task when it is still waiting for execution.
+     *
+     * Only PENDING tasks can be canceled. If the task is already RUNNING,
+     * DONE, FAILED, or CANCELED, the method throws TaskConflictException.
+     */
     public void cancel(UUID id) {
         Task t = repo.findByID(id).orElseThrow(() -> new TaskNotFoundException(id));
 
