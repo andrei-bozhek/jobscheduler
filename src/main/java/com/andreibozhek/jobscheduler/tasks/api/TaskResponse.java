@@ -11,7 +11,7 @@ import java.util.UUID;
 public record TaskResponse(
         UUID            id,
         String          type,
-        String          payload,
+        JsonNode        payload,
         TaskStatus      status,
         OffsetDateTime  runAt,
         int             attempt,
@@ -24,7 +24,7 @@ public record TaskResponse(
         return new TaskResponse(
                 t.id(),
                 t.type(),
-                t.payloadJson(),
+                readPayload(t.payloadJson()),
                 t.status(),
                 t.runAt(),
                 t.attempt(),
