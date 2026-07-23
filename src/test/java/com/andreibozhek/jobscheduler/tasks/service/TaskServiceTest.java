@@ -32,4 +32,18 @@ class TaskServiceTest extends IntegrationTestBase {
 
         assertThat(task.maxAttempts()).isEqualTo(3);
     }
+
+    @Test
+    void createTaskNormalizesTaskType() {
+        CreateTaskRequest request = new CreateTaskRequest(
+                "ECHO",
+                objectMapper.createObjectNode().put("message", "hello"),
+                OffsetDateTime.now().plusMinutes(1),
+                3
+        );
+
+        Task task = service.create(request);
+
+        assertThat(task.type()).isEqualTo("echo");
+    }
 }
