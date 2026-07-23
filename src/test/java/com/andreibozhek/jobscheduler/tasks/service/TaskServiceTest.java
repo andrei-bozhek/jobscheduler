@@ -29,6 +29,14 @@ class TaskServiceTest extends IntegrationTestBase {
     @Autowired
     TaskRepository repo;
 
+    /**
+     * Verifies that maxAttempts gets a default value when the client omits it.
+     *
+     * What this test checks:
+     * - the request has maxAttempts set to null;
+     * - service.create(...) still creates the task;
+     * - the created task uses 3 as the default maxAttempts value.
+     */
     @Test
     void createTaskUsesDefaultMaxAttempts() {
         CreateTaskRequest request = new CreateTaskRequest(
@@ -43,6 +51,14 @@ class TaskServiceTest extends IntegrationTestBase {
         assertThat(task.maxAttempts()).isEqualTo(3);
     }
 
+    /**
+     * Verifies that task type is normalized before saving.
+     *
+     * What this test checks:
+     * - the request uses uppercase ECHO;
+     * - service.create(...) accepts it;
+     * - the stored task type becomes lowercase echo.
+     */
     @Test
     void createTaskNormalizesTaskType() {
         CreateTaskRequest request = new CreateTaskRequest(
@@ -57,6 +73,14 @@ class TaskServiceTest extends IntegrationTestBase {
         assertThat(task.type()).isEqualTo("echo");
     }
 
+    /**
+     * Verifies that unknown task types are rejected.
+     *
+     * What this test checks:
+     * - the request uses a task type that has no handler;
+     * - service.create(...) does not create the task;
+     * - UnsupportedTaskTypeException is thrown.
+     */
     @Test
     void createTaskRejectsUnsupportedTaskType() {
         CreateTaskRequest request = new CreateTaskRequest(
@@ -70,6 +94,14 @@ class TaskServiceTest extends IntegrationTestBase {
                 .isInstanceOf(UnsupportedTaskTypeException.class);
     }
 
+    /**
+     * Verifies that tasks cannot be scheduled too far in the past.
+     *
+     * What this test checks:
+     * - the request uses runAt in the past;
+     * - service.create(...) rejects the request;
+     * - BadRequestApiException is thrown.
+     */
     @Test
     void createTaskRejectsPastRunTime() {
         CreateTaskRequest request = new CreateTaskRequest(
@@ -83,6 +115,14 @@ class TaskServiceTest extends IntegrationTestBase {
                 .isInstanceOf(BadRequestApiException.class);
     }
 
+    /**
+     * Verifies that a pending task can be canceled.
+     *
+     * What this test checks:
+     * - service.create(...) creates a PENDING task;
+     * - service.cancel(...) is called for that task;
+     * - the task status becomes CANCELED.
+     */
     @Test
     void cancelPendingTaskMarksTaskAsCanceled() {
         CreateTaskRequest request = new CreateTaskRequest(
@@ -101,6 +141,14 @@ class TaskServiceTest extends IntegrationTestBase {
         assertThat(updated.status()).isEqualTo(TaskStatus.CANCELED);
     }
 
+    /**
+     * Verifies that a running task cannot be canceled.
+     *
+     * What this test checks:
+     * - the database contains a RUNNING task;
+     * - service.cancel(...) is called for that task;
+     * - TaskConflictException is thrown because only PENDING tasks are cancelable.
+     */
     @Test
     void cancelRunningTaskThrowsConflict() {
         OffsetDateTime now = OffsetDateTime.now();
@@ -126,6 +174,15 @@ class TaskServiceTest extends IntegrationTestBase {
                 .isInstanceOf(TaskConflictException.class);
     }
 
+    /**
+     * Verifies that very large payloads are rejected.
+     *
+     * What this test checks:
+     * - the payload contains a long message;
+     * - after JSON serialization, the payload is larger than the allowed limit;
+     * - service.create(...) rejects the request;
+     * - BadRequestApiException is thrown.
+     */
     @Test
     void createTaskRejectsTooLargePayload() {
         String message = "a".repeat(5000);
