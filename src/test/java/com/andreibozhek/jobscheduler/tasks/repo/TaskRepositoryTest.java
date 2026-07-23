@@ -151,4 +151,60 @@ class TaskRepositoryTest extends IntegrationTestBase {
         assertThat(updated.lockedUntil()).isNull();
         assertThat(updated.attempt()).isZero();
     }
+
+    @Test
+    void claimDueTasksRespectsBatchSize() {
+        OffsetDateTime now = OffsetDateTime.now();
+
+        Task firstTask = new Task(
+                UUID.randomUUID(),
+                "echo",
+                "{\"message\":\"first\"}",
+                TaskStatus.PENDING,
+                now.minusMinutes(1),
+                0,
+                3,
+                null,
+                null,
+                null,
+                now,
+                now
+        );
+
+        Task secondTask = new Task(
+                UUID.randomUUID(),
+                "echo",
+                "{\"message\":\"second\"}",
+                TaskStatus.PENDING,
+                now.minusMinutes(1),
+                0,
+                3,
+                null,
+                null,
+                null,
+                now,
+                now
+        );
+
+        repo.insert(firstTask);
+        repo.insert(secondTask);
+
+        List<Task> claimed = repo.claimDueTasks("worker-test", 1, 30);
+
+        Task updatedFirstTask = repo.findByID(firstTask.id()).orElseThrow();
+        Task updatedSecondTask = repo.findByID(secondTask.id()).orElseThrow();
+
+        assertThat(claimed).hasSize(1);
+
+        long runningTasks = List.of(updatedFirstTask, updatedSecondTask).stream()
+                .filter(task -> task.status() == TaskStatus.RUNNING)
+                .count();
+
+        long pendingTasks = List.of(updatedFirstTask, updatedSecondTask).stream()
+                .filter(task -> task.status() == TaskStatus.PENDING)
+                .count();
+
+        assertThat(runningTasks).isEqualTo(1);
+        assertThat(pendingTasks).isEqualTo(1);
+    }
 }
