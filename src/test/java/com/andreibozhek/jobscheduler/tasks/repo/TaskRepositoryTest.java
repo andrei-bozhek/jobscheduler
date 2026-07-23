@@ -17,6 +17,18 @@ class TaskRepositoryTest extends IntegrationTestBase {
     @Autowired
     TaskRepository repo;
 
+    /**
+     * Verifies that an expired RUNNING task is returned to the queue.
+     *
+     * This test checks:
+     * - the task starts as RUNNING;
+     * - locked_until is in the past, so the lease has expired;
+     * - requeueExpiredRunningTasks() updates one row;
+     * - the task becomes PENDING again;
+     * - locked_by and locked_until are cleared;
+     * - error explains why the task was requeued;
+     * - attempt stays unchanged because requeue does not execute the task.
+     */
     @Test
     void requeueExpiredRunningTaskReturnsExpiredRunningTaskToPending() {
         UUID taskId = UUID.randomUUID();
@@ -52,6 +64,18 @@ class TaskRepositoryTest extends IntegrationTestBase {
 
     }
 
+    /**
+     * Verifies that an active RUNNING task is not requeued.
+     *
+     * This test checks:
+     * - the task starts as RUNNING;
+     * - locked_until is in the future, so the lease is still active;
+     * - requeueExpiredRunningTasks() updates zero rows;
+     * - the task stays RUNNING;
+     * - locked_by is still the same worker id;
+     * - locked_until is still present;
+     * - attempt stays unchanged.
+     */
     @Test
     void requeueExpiredRunningTasksKeepsActiveRunningTaskLocked() {
         UUID taskId = UUID.randomUUID();
@@ -85,6 +109,18 @@ class TaskRepositoryTest extends IntegrationTestBase {
         assertThat(updated.attempt()).isEqualTo(1);
     }
 
+    /**
+     * Verifies that a worker can claim a task that is ready to run.
+     *
+     * This test checks:
+     * - the task starts as PENDING;
+     * - runAt is in the past, so the task is due;
+     * - claimDueTasks(...) returns this task;
+     * - the database row changes to RUNNING;
+     * - locked_by is set to the worker id;
+     * - locked_until is set, so the worker has a lease;
+     * - attempt increases from 0 to 1.
+     */
     @Test
     void claimDueTasksMarksPendingTaskAsRunning() {
         UUID taskId = UUID.randomUUID();
@@ -119,6 +155,17 @@ class TaskRepositoryTest extends IntegrationTestBase {
         assertThat(updated.attempt()).isEqualTo(1);
     }
 
+    /**
+     * Verifies that future tasks are not claimed too early.
+     *
+     * This test checks:
+     * - the task starts as PENDING;
+     * - runAt is in the future, so the task is not due yet;
+     * - claimDueTasks(...) returns an empty list;
+     * - the task stays PENDING;
+     * - no lock is created;
+     * - attempt stays 0 because the task was not claimed.
+     */
     @Test
     void claimDueTasksSkipsFutureTask() {
         UUID taskId = UUID.randomUUID();
@@ -152,6 +199,16 @@ class TaskRepositoryTest extends IntegrationTestBase {
         assertThat(updated.attempt()).isZero();
     }
 
+    /**
+     * Verifies that claiming respects the requested batch size.
+     *
+     * This test checks:
+     * - two tasks are PENDING and already due;
+     * - the worker asks to claim only one task;
+     * - claimDueTasks(...) returns exactly one task;
+     * - only one database row becomes RUNNING;
+     * - the other task stays PENDING.
+     */
     @Test
     void claimDueTasksRespectsBatchSize() {
         OffsetDateTime now = OffsetDateTime.now();
