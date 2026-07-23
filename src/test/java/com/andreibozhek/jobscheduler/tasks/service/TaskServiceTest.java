@@ -3,14 +3,17 @@ package com.andreibozhek.jobscheduler.tasks.service;
 import com.andreibozhek.jobscheduler.IntegrationTestBase;
 import com.andreibozhek.jobscheduler.tasks.api.BadRequestApiException;
 import com.andreibozhek.jobscheduler.tasks.api.CreateTaskRequest;
+import com.andreibozhek.jobscheduler.tasks.api.TaskConflictException;
 import com.andreibozhek.jobscheduler.tasks.api.UnsupportedTaskTypeException;
 import com.andreibozhek.jobscheduler.tasks.domain.Task;
 import com.andreibozhek.jobscheduler.tasks.domain.TaskStatus;
+import com.andreibozhek.jobscheduler.tasks.repo.TaskRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -22,6 +25,9 @@ class TaskServiceTest extends IntegrationTestBase {
 
     @Autowired
     ObjectMapper objectMapper;
+
+    @Autowired
+    TaskRepository repo;
 
     @Test
     void createTaskUsesDefaultMaxAttempts() {
@@ -93,6 +99,31 @@ class TaskServiceTest extends IntegrationTestBase {
         Task updated = service.get(task.id()).orElseThrow();
 
         assertThat(updated.status()).isEqualTo(TaskStatus.CANCELED);
+    }
+
+    @Test
+    void cancelRunningTaskThrowsConflict() {
+        OffsetDateTime now = OffsetDateTime.now();
+
+        Task task = new Task(
+                UUID.randomUUID(),
+                "echo",
+                "{\"message\":\"hello\"}",
+                TaskStatus.RUNNING,
+                now.minusMinutes(1),
+                1,
+                3,
+                null,
+                "worker-test",
+                now.plusMinutes(1),
+                now,
+                now
+        );
+
+        repo.insert(task);
+
+        assertThatThrownBy(() -> service.cancel(task.id()))
+                .isInstanceOf(TaskConflictException.class);
     }
 
 }
