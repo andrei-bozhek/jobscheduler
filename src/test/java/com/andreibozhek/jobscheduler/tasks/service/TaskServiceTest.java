@@ -5,6 +5,7 @@ import com.andreibozhek.jobscheduler.tasks.api.BadRequestApiException;
 import com.andreibozhek.jobscheduler.tasks.api.CreateTaskRequest;
 import com.andreibozhek.jobscheduler.tasks.api.UnsupportedTaskTypeException;
 import com.andreibozhek.jobscheduler.tasks.domain.Task;
+import com.andreibozhek.jobscheduler.tasks.domain.TaskStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,6 +75,24 @@ class TaskServiceTest extends IntegrationTestBase {
 
         assertThatThrownBy(() -> service.create(request))
                 .isInstanceOf(BadRequestApiException.class);
+    }
+
+    @Test
+    void cancelPendingTaskMarksTaskAsCanceled() {
+        CreateTaskRequest request = new CreateTaskRequest(
+                "echo",
+                objectMapper.createObjectNode().put("message", "hello"),
+                OffsetDateTime.now().plusMinutes(1),
+                3
+        );
+
+        Task task = service.create(request);
+
+        service.cancel(task.id());
+
+        Task updated = service.get(task.id()).orElseThrow();
+
+        assertThat(updated.status()).isEqualTo(TaskStatus.CANCELED);
     }
 
 }
