@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,6 +81,40 @@ class TaskRepositoryTest extends IntegrationTestBase {
         assertThat(requeued).isZero();
         assertThat(updated.status()).isEqualTo(TaskStatus.RUNNING);
         assertThat(updated.lockedBy()).isEqualTo("worker-active");
+        assertThat(updated.lockedUntil()).isNotNull();
+        assertThat(updated.attempt()).isEqualTo(1);
+    }
+
+    @Test
+    void claimDueTasksMarksPendingTaskAsRunning() {
+        UUID taskId = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now();
+
+        Task task = new Task(
+                taskId,
+                "echo",
+                "{\"message\":\"hello\"}",
+                TaskStatus.PENDING,
+                now.minusMinutes(1),
+                0,
+                3,
+                null,
+                null,
+                null,
+                now,
+                now
+        );
+
+        repo.insert(task);
+
+        List<Task> claimed = repo.claimDueTasks("worker-test", 10, 30);
+
+        Task updated = repo.findByID(taskId).orElseThrow();
+
+        assertThat(claimed).hasSize(1);
+        assertThat(claimed.getFirst().id()).isEqualTo(taskId);
+        assertThat(updated.status()).isEqualTo(TaskStatus.RUNNING);
+        assertThat(updated.lockedBy()).isEqualTo("worker-test");
         assertThat(updated.lockedUntil()).isNotNull();
         assertThat(updated.attempt()).isEqualTo(1);
     }
