@@ -126,4 +126,19 @@ class TaskServiceTest extends IntegrationTestBase {
                 .isInstanceOf(TaskConflictException.class);
     }
 
+    @Test
+    void createTaskRejectsTooLargePayload() {
+        String message = "a".repeat(5000);
+
+        CreateTaskRequest request = new CreateTaskRequest(
+                "echo",
+                objectMapper.createObjectNode().put("message", message),
+                OffsetDateTime.now().plusMinutes(1),
+                3
+        );
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(BadRequestApiException.class);
+    }
+
 }
