@@ -85,7 +85,9 @@ Response (`TaskResponse`):
 {
   "id": "2c7a9a1f-3ac8-4d2d-8f5f-6f2d6a5c7e2a",
   "type": "echo",
-  "payload": "{\"message\":\"hello\"}",
+  "payload": {
+    "message": "hello"
+  },
   "status": "PENDING",
   "runAt": "2026-02-20T10:20:00+09:00",
   "attempt": 0,
