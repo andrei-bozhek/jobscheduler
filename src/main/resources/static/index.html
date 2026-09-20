@@ -2,75 +2,56 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job Scheduler</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1c302d">
+    <meta name="description" content="Schedule tasks, watch them execute, and inspect their run history.">
+    <title>Task Calendar</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<main class="page">
-    <section class="toolbar">
-        <div>
-            <h1>Job Scheduler</h1>
+<svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18M8 15h2M14 15h2M8 18h2"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="m14 6-6 6 6 6"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="m10 6 6 6-6 6"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5m8-10 5 5-5 5m-3-14-4 18"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12 0l2 5M4 12l2 5a7 7 0 0 0 12 0"/></symbol>
+</svg>
+<div class="app-shell">
+    <aside class="sidebar">
+        <a class="brand" href="/" aria-label="Task Calendar home"><span class="brand-mark"><svg class="icon"><use href="#i-calendar"/></svg></span><span>Task<br><strong>Calendar</strong></span></a>
+        <button id="newTaskSidebar" class="button button-primary sidebar-create" data-action="create" disabled><svg class="icon"><use href="#i-plus"/></svg><span data-i18n="newTask">New task</span></button>
+        <section class="filters-section" aria-labelledby="filterHeading"><h2 class="eyebrow" id="filterHeading" data-i18n="taskStatus">Task status</h2><div id="statusFilters" class="status-filters"></div></section>
+        <section class="next-section" aria-labelledby="nextHeading"><h2 class="eyebrow" id="nextHeading" data-i18n="upNext">Up next</h2><div id="nextTask" class="next-task"></div></section>
+        <div class="sidebar-footer"><span class="stack-label">Java · Spring Boot · PostgreSQL</span><a href="https://github.com/andrei-bozhek/jobscheduler" target="_blank" rel="noopener noreferrer" class="source-link"><svg class="icon"><use href="#i-code"/></svg><span data-i18n="sourceCode">Source code</span><span aria-hidden="true">↗</span></a></div>
+    </aside>
+    <main class="workspace">
+        <header class="page-header"><div><p class="page-date" id="pageDate"></p><h1 data-i18n="calendar">Calendar</h1></div><div class="header-tools"><span id="connection" class="connection" role="status"></span><label class="language-select"><span class="sr-only" data-i18n="language">Language</span><select id="language" aria-label="Language"><option value="en">English</option><option value="ja">日本語</option><option value="ru">Русский</option></select></label></div></header>
+        <section class="demo-strip" aria-labelledby="demoHeading"><div class="demo-copy"><span class="demo-icon"><svg class="icon"><use href="#i-play"/></svg></span><div><h2 id="demoHeading" data-i18n="demoHeading">Watch a task come to life</h2><p data-i18n="demoText">Schedule a task for 30 seconds from now and follow its execution.</p></div></div><button id="quickRun" class="button button-dark" data-action="quick" disabled><span data-i18n="runIn30">Run in 30 seconds</span><svg class="icon"><use href="#i-arrow"/></svg></button></section>
+        <div id="apiError" class="error-banner" role="alert" hidden><span id="apiErrorText"></span><button class="text-button" data-action="refresh" data-i18n="retry">Retry</button></div>
+        <div class="calendar-layout">
+            <section class="calendar-card" aria-labelledby="monthHeading"><div class="calendar-toolbar"><div class="month-controls"><h2 id="monthHeading"></h2><div class="month-arrows"><button class="icon-button" data-action="prev" data-i18n-label="previousMonth" aria-label="Previous month"><svg class="icon"><use href="#i-left"/></svg></button><button class="icon-button" data-action="next" data-i18n-label="nextMonth" aria-label="Next month"><svg class="icon"><use href="#i-right"/></svg></button></div></div><button class="button button-outline button-small" data-action="today" data-i18n="today">Today</button></div><div id="weekdays" class="weekdays" aria-hidden="true"></div><div id="calendarGrid" class="calendar-grid" aria-label="Calendar"></div><footer class="calendar-footer"><span id="calendarHint"></span><span id="timezone"></span></footer></section>
+            <aside id="detailPanel" class="detail-panel" aria-label="Selected day and task details"></aside>
         </div>
-
-        <button id="refreshButton" type="button">Refresh</button>
-    </section>
-
-    <section class="panel">
-        <h2>Create Task</h2>
-
-        <form id="createTaskForm" class="form">
-            <label>
-                Type
-                <input name="type" value="echo" required>
-            </label>
-
-            <label>
-                Message
-                <input name="message" value="hello" required>
-            </label>
-
-            <label>
-                Run At
-                <input name="runAt" type="datetime-local" required>
-            </label>
-
-            <label>
-                Max Attempts
-                <input name="maxAttempts" type="number" min="1" max="5" value="3">
-            </label>
-
-            <button type="submit">Create</button>
-        </form>
-    </section>
-
-    <section class="panel">
-        <div class="sectionHeader">
-            <h2>Tasks</h2>
-
-            <select id="statusFilter">
-                <option value="">All</option>
-                <option value="PENDING">Pending</option>
-                <option value="RUNNING">Running</option>
-                <option value="DONE">Done</option>
-                <option value="FAILED">Failed</option>
-                <option value="CANCELED">Canceled</option>
-            </select>
-        </div>
-
-        <div id="taskList" class="taskList">
-            <p class="muted">No tasks loaded yet.</p>
-        </div>
-    </section>
-
-    <section class="panel">
-        <h2>Task Details</h2>
-        <div id="taskDetails">
-            <p class="muted">Select a task to view details.</p>
-        </div>
-    </section>
-</main>
-
-<script src="/app.js"></script>
+        <footer class="workspace-footer"><span id="syncNote"></span><button class="text-button" data-action="refresh"><svg class="icon"><use href="#i-refresh"/></svg><span data-i18n="refresh">Refresh</span></button></footer>
+    </main>
+</div>
+<dialog id="createDialog" class="dialog" aria-labelledby="createHeading"><form id="createTaskForm">
+    <div class="dialog-header"><div><p class="eyebrow" data-i18n="scheduleTask">Schedule a task</p><h2 id="createHeading" data-i18n="newTask">New task</h2></div><button type="button" class="icon-button" data-action="close-create" data-i18n-label="close" aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button></div>
+    <label class="field"><span data-i18n="title">Title</span><input name="title" id="taskTitle" maxlength="120" required autocomplete="off" data-i18n-placeholder="titlePlaceholder" placeholder="What would you like to schedule?"></label>
+    <label class="field"><span><span data-i18n="notes">Notes</span> <span class="optional" data-i18n="optional">optional</span></span><textarea name="notes" rows="3" maxlength="1000" data-i18n-placeholder="notesPlaceholder" placeholder="Add a little context…"></textarea></label>
+    <label class="field"><span data-i18n="dateTime">Date & time</span><input name="runAt" id="runAtInput" type="datetime-local" required step="60"><small id="formTimezone"></small></label>
+    <p class="form-note"><svg class="icon"><use href="#i-code"/></svg><span data-i18n="echoExplanation">The echo handler writes your message to the server log. The result appears in the task’s run history.</span></p><p id="formError" class="field-error" role="alert" hidden></p>
+    <div class="dialog-actions"><button type="button" class="button button-outline" data-action="close-create" data-i18n="dismiss">Cancel</button><button type="submit" id="submitTask" class="button button-primary" data-i18n="schedule">Schedule task</button></div>
+</form></dialog>
+<dialog id="cancelDialog" class="dialog dialog-small" aria-labelledby="cancelHeading"><form id="cancelTaskForm"><h2 id="cancelHeading" data-i18n="cancelHeading">Cancel this task?</h2><p data-i18n="cancelExplanation">A pending task will be canceled. Its record stays in the calendar.</p><p id="cancelError" class="field-error" role="alert" hidden></p><div class="dialog-actions"><button type="button" class="button button-outline" data-action="close-cancel" data-i18n="keepTask">Keep task</button><button type="submit" id="confirmCancel" class="button button-danger" data-i18n="cancelTask">Cancel task</button></div></form></dialog>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<script src="/app.js" defer></script>
 </body>
 </html>

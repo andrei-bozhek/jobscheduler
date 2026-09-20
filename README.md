@@ -47,6 +47,23 @@ docker compose up -d
 
 Flyway migrations are applied automatically on startup.
 
+Open [http://localhost:8080](http://localhost:8080) for the calendar interface. Spring Boot serves the UI and API together; no frontend build or Node.js is needed.
+
+### Calendar demo
+
+![Task Calendar preview](docs/calendar-preview.png)
+
+*Interface preview with sample API responses.*
+
+1. Click **Run in 30 seconds**. A real `echo` task is saved through `POST /tasks`.
+2. Watch the countdown, then the status change to **Completed**. The worker polls every second; a fast `echo` run may finish between UI refreshes, so **Running** can be too brief to see.
+3. Open **Run history** to inspect the attempt and its start/finish times.
+4. Create another task with **New task**, choose a future date, and cancel it while it is **Pending**.
+
+The calendar includes status filters, month navigation, mobile layouts, and English, Japanese, and Russian labels. Times use the browser's local time zone and are sent to the API as UTC instants. Existing API-created tasks also appear in the calendar.
+
+Task titles use `payload.message`; optional notes use `payload.description`. The UI stores the original date in `payload.scheduledAt` so retry backoff does not move a task to another calendar day. Older tasks without that field use `runAt`. Task states and run history come from the backend; the UI does not simulate execution. The current `echo` handler writes the payload to the server log.
+
 ### 3) (Optional) Health check
 
 If Actuator is enabled:
